@@ -64,7 +64,7 @@ function getById($id) {
 
 function isPaper($id) {
     $paper = getById($id);
-    if ($paper == NULL || $paper-> AA == NULL) return false;
+    if ($paper == NULL || isset($paper-> AA) == false) return false;
     return true;
 }
 
@@ -79,16 +79,22 @@ Route::get('/', function () {
 
 
     if (isPaper($id1)) {
+        /*
+        $p1 = getById($id1);
         if (isPaper($id2)) {
-            $p1 = getById($id1);
             $p2 = getById($id2);
             $anti_RIds = getAllWithExpr("RId=" . $id2);
             // id1 -> id3
             foreach ($p1 -> RId as $id3) {
+                if ($id3 == $id2) {
+                    array_push($ans, array("P-P", intval($id1), intval($id2)));
+                }
                 $p3 = getById($id3);
-                //var_dump($p3);
                 // id1 -> id3 -> id4
                 foreach ($p3 -> RId as $id4) {
+                    if ($id4 == $id2) {
+                        array_push($ans, array("P-P-P", intval($id1), $id3, intval($id2)));
+                    }
                     // id1 -> id3 -> id4 -> id2
                     foreach ($anti_RIds as $anti_RId) {
                         if ($id4 == $anti_RId -> Id) {
@@ -130,7 +136,218 @@ Route::get('/', function () {
                 }
 
             }
+            // id2 -> id4
+            foreach ($anti_RIds as $p4) {
+                // id1 <-> AuId1 <-> id4 -> id2
+                foreach ($p1 -> AA as $AA1) {
+                    foreach ($p4 -> AA as $AA4) {
+                        if ($AA1 -> AuId == $AA4 -> AuId) {
+                            array_push($ans, array("P-A-P-P", (float) $id1, $AA1 -> AuId, $p4 -> Id, (float) $id2));
+                        }
+                    }
+                }
+                // id1 <-> F <-> id4 -> id2
+                if (isset($p1 -> F) && isset($p4 -> F)) {
+                    foreach ($p1 -> F as $F1) {
+                        foreach ($p4 -> F as $F4) {
+                            if ($F1 -> FId == $F4 -> FId) {
+                                array_push($ans, array("P-F-P-P", (float) $id1, $F1 -> FId, $p4 -> Id, (float) $id2));
+                            }
+                        }
+                    }
+                }
+                // id1 <-> C <-> id4 -> id2
+                if (isset($p1 -> C) && isset($p4 -> C)) {
+                    if ($p1 -> C -> CId == $p4 -> C -> CId) {
+                        array_push($ans, array("P-C-P-P", (float) $id1, $p1 -> C -> CId, $p4 -> Id, (float) $id2));
+                    }
+                }
+                // id1 <-> J <-> id4 -> id2
+                if (isset($p1 -> J) && isset($p4 -> J)) {
+                    if ($p1 -> J -> JId == $p4 -> J -> JId) {
+                        array_push($ans, array("P-J-P-P", (float) $id1, $p1 -> J -> JId, $p4 -> Id, (float) $id2));
+                    }
+                }
+            }
+            // id1 -> AuId2 <- id2
+            foreach ($p1 -> AA as $AA1) {
+                foreach ($p2 -> AA as $AA2) {
+                    if ($AA1 -> AuId == $AA2 -> AuId) {
+                        array_push($ans, array("P-A-P", (float) $id1, $AA1 -> AuId, (float) $id2));
+                    }
+                }
+            }
+            // id1 -> F <- id2
+            if (isset($p1 -> F) && isset($p2 -> F)) {
+                foreach ($p1 -> F as $F1) {
+                    foreach ($p2 -> F as $F2) {
+                        if ($F1 -> FId == $F2 -> FId) {
+                            array_push($ans, array("P-F-P", (float) $id1, $F1 -> FId, (float) $id2));
+                        }
+                    }
+                }
+            }
+            // id1 -> C <- id2
+            if (isset($p1 -> C) && isset($p2 -> C)) {
+                if ($p1 -> C -> CId == $p2 -> C -> CId) {
+                    array_push($ans, array("P-C-P", (float) $id1, $p1 -> C -> CId, (float) $id2));
+                }
+            }
+            // id1 -> J <- id2
+            if (isset($p1 -> J) && isset($p2 -> J)) {
+                if ($p1 -> J -> JId == $p2 -> J -> JId) {
+                    array_push($ans, array("P-J-P", (float) $id1, $p1 -> J -> JId, (float) $id2));
+                }
+            }
         }
+        else {
+            $AuId2 = $id2;
+            // id1 <-> AuId2
+            foreach ($p1 -> AA as $AA1) {
+                if ($AA1 -> AuId == $AuId2) {
+                    array_push($ans, array("P-A", (float) $id1, (float) $AuId2));
+                }
+            }
+            $p4s = getAllWithExpr("Composite(AA.AuId=" . $id2 . ")");
+            // id4 <- AuId2
+            foreach ($p4s as $p4) {
+                $id4 = $p4 -> Id;
+                // id1 -> id4 <- AuId2
+                foreach ($p1 -> RId as $rid) {
+                    if ($rid == $p4 -> Id) {
+                        array_push($ans, array("P-P-A", (float) $id1, $p4 -> Id, (float) $AuId2));
+                    }
+                }
+                // id1 -> id3 <- id4 <- AuId2
+                $anti_RIds = getAllWithExpr("RId=" . $id4);
+                foreach ($anti_RIds as $p3) {
+                    foreach ($p1->RId as $rid) {
+                        if ($rid == $p3 -> Id) {
+                            array_push($ans, array("P-P-P-A", (float) $id1, $p3 -> Id, $p4 -> Id, (float) $AuId2));
+                        }
+                    }
+                }
+                // id1 -> AuId3 <- id4 <- AuId2
+                foreach ($p1 -> AA as $AA1)
+                    foreach ($p4 -> AA as $AA4)
+                        if ($AA1 -> AuId == $AA4 -> AuId)
+                            array_push($ans, array("P-A-P-A", (float) $id1, $AA1 -> AuId, $id4, (float) $AuId2));
+                // Id1 -> FId3 <- Id4 <- AuId 2
+                if (isset($p1 -> F) && isset($p4 -> F))
+                    foreach ($p1 -> F as $F1)
+                        foreach ($p4 -> F as $F4)
+                            if ($F1-> FId == $F4 -> FId)
+                                array_push($ans, array("P-F-P-A", (float) $id1, $F1 -> FId, $id4, (float) $AuId2));
+                // Id1 -> CId3 <- Id4 <- AuId 2
+                if (isset($p1 -> C) && isset($p4 -> C))
+                    if ($p1 -> C -> CId == $p4 -> C -> CId)
+                        array_push($ans, array("P-C-P-A", (float) $id1, $p1 -> C -> CId, $id4, (float) $AuId2));
+                // Id1 -> JId3 <- Id4 <- AuId 2
+                if (isset($p1 -> J) && isset($p4 -> J))
+                    if ($p1 -> J -> JId == $p4 -> J -> JId)
+                        array_push($ans, array("P-J-P-A", (float) $id1, $p1 -> J -> JId, $id4, (float) $AuId2));
+            }
+            // AFAP
+            $ids = array();
+            foreach ($p4s as $p4) {
+                foreach ($p4 -> AA as $AA4) if (isset($AA4 -> AfId) && $AA4 -> AuId == $AuId2)
+                    if (!in_array($AA4 -> AfId, $ids)) {
+                        array_push($ids, $AA4 -> AfId);
+                        foreach ($p1 -> AA as $AA1) if (isset($AA1 -> AfId) && $AA1 -> AfId == $AA4 -> AfId)
+                            array_push($ans, array("P-A-F-A", (float) $id1, $AA1 -> AuId, $AA1 -> AfId, (float) $AuId2));
+                }
+        }
+        */
+    }
+    else {
+        /*
+        $AuId1 = $id1;
+        $p1s = getAllWithExpr("Composite(AA.AuId=" . $AuId1 . ")");
+        if (isPaper($id2)) {
+            $p2 = getById($id2);
+            // AP
+            foreach ($p2 -> AA as $AA1) {
+                if ($AA1 -> AuId == $AuId1) {
+                    array_push($ans, array("A-P", (float) $AuId1, (float) $id2));
+                }
+            }
+            $p4s = getAllWithExpr("RId=" . $id2);
+            // APP
+            foreach ($p4s as $p4)
+                foreach ($p4 -> AA as $AA4)
+                    if ($AA4 -> AuId == $AuId1)
+                        array_push($ans, array("A-P-P", (float) $AuId1, $p4 -> Id, (float) $id2));
+            // APPP
+            foreach ($p1s as $p1)
+                foreach ($p1 -> RId as $rid)
+                    foreach ($p4s as $p4)
+                        if ($rid == $p4 -> Id)
+                            array_push($ans, array("A-P-P-P", (float) $AuId1, $p1 -> Id, $p4 -> Id, (float) $id2));
+            // APAP
+            foreach ($p1s as $p1)
+                foreach ($p1 -> AA as $AA1)
+                    foreach ($p2 -> AA as $AA2)
+                        if ($AA1 -> AuId == $AA2 -> AuId)
+                            array_push($ans, array("A-P-A-P", (float) $AuId1, $p1 -> Id, $AA2 -> AuId, (float) $id2));
+            // APFP
+            if (isset($p2 -> F))
+                foreach ($p1s as $p1) if (isset($p1 -> F))
+                    foreach ($p1 -> F as $F1)
+                        foreach ($p2 -> F as $F2)
+                            if ($F1 -> FId == $F2 -> FId)
+                                array_push($ans, array("A-P-A-P", (float) $AuId1, $p1 -> Id, $F2 -> FId, (float) $id2));
+            // APCP
+            if (isset($p2 -> C))
+                foreach ($p1s as $p1) if (isset($p1 -> C)) if (isset($p1 -> C))
+                    if ($p1 -> C -> CId == $p2 -> C -> CId)
+                        array_push($ans, array("A-P-C-P", (float) $AuId1, $p1 -> Id, $p2 -> C -> CId, (float) $id2));
+            // APJP
+            if (isset($p2 -> J))
+                foreach ($p1s as $p1) if (isset($p1 -> J)) if (isset($p1 -> J))
+                    if ($p1 -> J -> JId == $p2 -> J -> JId)
+                        array_push($ans, array("A-P-J-P", (float) $AuId1, $p1 -> Id, $p2 -> J -> CId, (float) $id2));
+            // AFAP
+            $ids = array();
+            foreach ($p1s as $p1)
+                foreach ($p1 -> AA as $AA1) if (isset($AA1 -> AfId) && $AA1 -> AuId == $id1)
+                    if (!in_array($AA1 -> AfId, $ids)) {
+                        array_push($ids, $AA1 -> AfId);
+                        foreach ($p2 -> AA as $AA2) if (isset($AA2 -> AfId) && $AA2 -> AfId == $AA1 -> AfId)
+                            array_push($ans, array("A-F-A-P", (float) $AuId1, $AA1 -> AfId, $AA2 -> AuId, (float) $id2));
+                    }
+        }
+        else {
+            $AuId2 = $id2;
+            $p2s = getAllWithExpr("Composite(AA.AuId=" . $id2 . ")");
+            // AIA
+            $AfIds1 = array();
+            $AfIds2 = array();
+            foreach ($p1s as $p1)
+                foreach ($p1 -> AA as $AA1) if ($AA1 -> AuId == $AuId1 && isset($AA1 -> AfId))
+                    array_push($AfIds1, $AA1 -> AfId);
+            foreach ($p2s as $p2)
+                foreach ($p2 -> AA as $AA2) if ($AA2 -> AuId == $AuId2 && isset($AA2 -> AfId))
+                    array_push($AfIds2, $AA2 -> AfId);
+            $AfIds1 = array_unique($AfIds1);
+            $AfIds2 = array_unique($AfIds2);
+            foreach ($AfIds1 as $AfId1)
+                foreach ($AfIds2 as $AfId2)
+                    if ($AfId1 == $AfId2)
+                        array_push($ans, array("A-I-A", (float) $AuId1, $AfId1, (float) $AuId2));
+            // APA
+            foreach ($p1s as $p1)
+                foreach ($p2s as $p2)
+                    if ($p1 -> Id == $p2 -> Id)
+                        array_push($ans, array("A-P-A", (float) $AuId1, $p1 -> Id, (float) $AuId2));
+            // APPA
+            $ids = array();
+            foreach ($p1s as $p1)
+                foreach ($p1 -> RId as $rid)
+                    foreach ($p2s as $p2)
+                        if ($rid == $p2 -> Id)
+                            array_push($ans, array("A-P-P-A", (float) $AuId1, $p1 -> Id, $p2 -> Id, (float) $AuId2));
+        }
+        */
     }
 
     return $ans;
