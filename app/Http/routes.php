@@ -314,14 +314,25 @@ Route::get('/', function () {
                     if ($p1 -> J -> JId == $p2 -> J -> JId)
                         array_push($ans, array("A-P-J-P", (float) $AuId1, $p1 -> Id, $p2 -> J -> JId, (float) $id2));
             // AFAP
-            $ids = array();
+            $fids = array();
             foreach ($p1s as $p1)
-                foreach ($p1 -> AA as $AA1) if (isset($AA1 -> AfId) && $AA1 -> AuId == $id1)
-                    if (!in_array($AA1 -> AfId, $ids)) {
-                        array_push($ids, $AA1 -> AfId);
-                        foreach ($p2 -> AA as $AA2) if (isset($AA2 -> AfId) && $AA2 -> AfId == $AA1 -> AfId)
-                            array_push($ans, array("A-F-A-P", (float) $AuId1, $AA1 -> AfId, $AA2 -> AuId, (float) $id2));
+                foreach ($p1 -> AA as $AA1) if (isset($AA1 -> AfId) && $AA1 -> AuId == $id1) {
+                    if (!in_array($AA1 -> AfId, $fids)) {
+                        array_push($fids, $AA1 -> AfId);
                     }
+                }
+            foreach ($p2 -> AA as $AA2) if (isset($AA2 -> AuId)) {
+                $p3s = getAllWithExpr("Composite(AA.AuId=" . $AA2 -> AuId . ")");
+                $ids = array();
+                foreach ($p3s as $p3)
+                    foreach ($p3 -> AA as $AA3) if (isset($AA3 -> AfId) && $AA3 -> AuId == $AA2 -> AuId)
+                        if (!in_array($AA3 -> AfId, $ids)) {
+                            array_push($ids, $AA3 -> AfId);
+                            if (in_array($AA3 -> AfId, $fids)) {
+                                array_push($ans, array("A-F-A-P", (float)$id1, $AA3 -> AfId, $AA2 -> AuId, (float)$id2));
+                            }
+                        }
+            }
         }
         else {
             $AuId2 = $id2;
